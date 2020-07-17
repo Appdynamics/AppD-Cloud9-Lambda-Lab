@@ -25,8 +25,8 @@ OS_TYPE=`uname -s`
 if [ $cmd == "test" ]; then
   echo "Test"
 
-# New for MINI LAB
-elif [ $cmd == "createUserGroup" ]; then
+elif [ $cmd == "create-user-group" ]; then
+  # Create the Group and User. Add the User to the Group
   aws iam create-group --group-name $AWS_CLOUD9_GROUP_NAME
   aws iam create-user  --user-name  $AWS_CLOUD9_USER_NAME
   aws iam add-user-to-group --user-name $AWS_CLOUD9_USER_NAME --group-name $AWS_CLOUD9_GROUP_NAME
@@ -62,21 +62,22 @@ elif [ $cmd == "createUserGroup" ]; then
 
   # Create random Password unless already provided
   AWS_CLOUD9_USER_PWD=${AWS_CLOUD9_USER_PWD:-$(openssl rand -base64 16 | tr -dc A-Z-a-z-0-9)}
+  echo $AWS_CLOUD9_USER_PWD >> .cloud9_password
   aws iam create-login-profile --user-name $AWS_CLOUD9_USER_NAME --password $AWS_CLOUD9_USER_PWD --no-password-reset-required
   echo "Created User $AWS_CLOUD9_USER_NAME with Password $AWS_CLOUD9_USER_PWD"
 
-elif [ $cmd = "cloud9List" ]; then
+elif [ $cmd = "cloud9-list" ]; then
   aws cloud9 list-environments
 
-elif [ $cmd = "cloud9CreateEnv" ]; then
+elif [ $cmd = "cloud9-create-env" ]; then
   USER_ARN=`aws iam get-user --user-name $AWS_CLOUD9_USER_NAME --query "User.Arn" --output text`
   aws cloud9 create-environment-ec2 \
       --name $AWS_CLOUD9_ENV_NAME \
-      --description "AWS_CLOUD9_ENV_NAME" \
+      --description "AppDynamics Mini Lab" \
       --instance-type t2.micro \
       --automatic-stop-time-minutes 60 --owner-arn $USER_ARN
 
-elif [ $cmd = "cloud9deleteAllEnv" ]; then
+elif [ $cmd = "cloud9-delete-all-env" ]; then
   aws cloud9 list-environments --query environmentIds
   LIST1=$(aws cloud9 list-environments --query environmentIds --output text)
   echo $LIST1
@@ -85,12 +86,11 @@ elif [ $cmd = "cloud9deleteAllEnv" ]; then
     aws cloud9 delete-environment --environment-id $ENV_ID
   done
 
-elif [ $cmd == "deleteUserGroup" ]; then
+elif [ $cmd == "delete-user-group" ]; then
   aws iam remove-user-from-group --group-name $AWS_CLOUD9_GROUP_NAME --user-name $AWS_CLOUD9_USER_NAME
   aws iam delete-login-profile --user-name $AWS_CLOUD9_USER_NAME
   aws iam delete-user --user-name $AWS_CLOUD9_USER_NAME
   aws iam get-group --group-name $AWS_CLOUD9_GROUP_NAME
-  aws iam list-attached-group-policies --group-name $AWS_CLOUD9_GROUP_NAME
   LIST1=$(aws iam list-attached-group-policies --group-name $AWS_CLOUD9_GROUP_NAME --query AttachedPolicies[].PolicyArn --output text)
   for POLICY_ARN in $LIST1; do
     echo "Deteching Policy $POLICY_ARN from Group $AWS_CLOUD9_GROUP_NAME"
@@ -100,10 +100,10 @@ elif [ $cmd == "deleteUserGroup" ]; then
   aws iam delete-group --group-name $AWS_CLOUD9_GROUP_NAME
   aws cloudformation delete-stack --stack-name $AWS_CLOUD_LAMBDA_ACCESS_GROUP_NAME
 
-elif [ $cmd == "listFunctions" ]; then
+elif [ $cmd == "lambda-list-functions" ]; then
   aws lambda list-functions | jq -r '[.Functions[] | {FunctionName, Runtime, Handler, FunctionArn}  ]'
 
-elif [ $cmd == "lambdaDeleteAllFunctions" ]; then
+elif [ $cmd == "lambda-delete-all-functions" ]; then
   LIST1=$(aws lambda list-functions --query Functions[].FunctionName --output text)
   echo $LIST1
   for FN_NAME in $LIST1; do
@@ -179,14 +179,16 @@ elif [ $cmd == "installJq" ]; then
 
 elif [ $cmd == "installAwsCli" ]; then
   if [ "$OS_TYPE" == "Darwin" ]; then
-    # https://docs.aws.amazon.com/cli/latest/userguide/install-macos.html
-    curl "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "awscli-bundle.zip"
-    unzip awscli-bundle.zip
-    sudo ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
-    sudo /usr/local/bin/python awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+    # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html
+    curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+    sudo installer -pkg AWSCLIV2.pkg -target /
     aws --version
   elif [ "$OS_TYPE" == "Linux" ]; then
-    sudo apt-get install awscli
+    sudo apt-get -y remove awscli
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    sudo ./aws/install --update
+    aws --version
+    #sudo apt-get install awscli
   else
     echo "Unknown OS TYPE: $OS_TYPE"
   fi
@@ -253,28 +255,15 @@ elif [ $cmd == "test1" ]; then
 else
   echo ""
   echo "Commands: "
-  echo "  createFunction        Create an AWS Lambda function"
-  echo "  listFunctions         List Lambda functions"
-  echo "  invokeFunction        Invoke a Lambda fuction directly"
-  echo "  updateFunctionCode    Update a Lambda functions' code"
-  echo "  updateFunctionHandler Update Lambda function hanlder"
-  echo "  deleteFunction        Delete a Lambda function"
-  echo "  configureAppDynamicsLambda  Configure a Lambda function's AppD Environment Variables"
-  echo "  createRestApi         Create an API Gateway REST API to trigger a Fuction"
-  echo "  listRestApi           List all REST APIs"
-  echo "  deleteRestApi         Delete an REST API"
-  echo "  testRestApiCurl       Invoke the function using curl and REST API"
-  echo "  testRestApiCurlError  Inject an exception into the Lambda function"
-  echo "  testRestApiJavaApp    Invoke the function using the Java App"
-  echo "  startJavaApp          Start the Java App as a process"
-  echo "  stopJavaApp           Stop the Java App as a process"
-  echo "  loadGenJavaApp        Start the Java App load generator as a process"
+  echo "  create-user-group             Create the Group, User and Polciies for Cloud9"
+  echo "  cloud9-create-env             Create a Cloud9 IDE environment"
+  echo "  lambda-list-functions         List all lambda functions"
+  echo ""
+  echo "  cloud9-delete-all-env         Delete all Clloud9 IDE environments "
+  echo "  delete-user-group             Delete the Cloud9 User and Group "
+  echo "  lambda-delete-all-functions   Delete all lambda functions"
+  echo ""
   echo "  installJq             Install JQ"
   echo "  installAwsCli         Install AWS CLI"
   echo "  installMaven          Install Apache Maven"
-  echo "  buildLambda           Compile and package the Lambda function"
-  echo "  buildJavaApp          Compile and package the Java App"
-  echo "  dockerBuild           Build a Docker container, $DOCKER_IMAGE_NAME, for this lab"
-  echo "  dockerRun             Run the Docker container, $DOCKER_IMAGE_NAME"
-  echo "  dockerBash            Connect to Docker container, $DOCKER_IMAGE_NAME, using bash"
 fi

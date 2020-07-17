@@ -17,7 +17,7 @@ Resources:
             Action:
               - "cloudformation:GetTemplateSummary"
               - "cloudformation:CreateChangeSet"
-              - "cloudformation:ListStack"
+              - "cloudformation:ListStacks"
               - "cloudformation:CreateStack"
               - "cloudformation:DeleteStack"
               - "cloudformation:DescribeChangeSet"
