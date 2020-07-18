@@ -21,11 +21,14 @@ OS_TYPE=`uname -s`
 # Environment Variables Source
 . envvars.sh
 
+# Other Functions
+. bashUtilities.sh
+
 # Commands
 if [ $cmd == "test" ]; then
   echo "Test"
 
-elif [ $cmd == "create-user-group" ]; then
+elif [ $cmd == "create-cloud9-user" ]; then
   # Create the Group and User. Add the User to the Group
   aws iam create-group --group-name $AWS_CLOUD9_GROUP_NAME
   aws iam create-user  --user-name  $AWS_CLOUD9_USER_NAME
@@ -66,18 +69,19 @@ elif [ $cmd == "create-user-group" ]; then
   aws iam create-login-profile --user-name $AWS_CLOUD9_USER_NAME --password $AWS_CLOUD9_USER_PWD --no-password-reset-required
   echo "Created User $AWS_CLOUD9_USER_NAME with Password $AWS_CLOUD9_USER_PWD"
 
-elif [ $cmd = "cloud9-list" ]; then
-  aws cloud9 list-environments
+elif [ $cmd = "list-cloud9" ]; then
+  _awsCloud9ListEnvironments
 
-elif [ $cmd = "cloud9-create-env" ]; then
+elif [ $cmd = "create-cloud9-env" ]; then
   USER_ARN=`aws iam get-user --user-name $AWS_CLOUD9_USER_NAME --query "User.Arn" --output text`
   aws cloud9 create-environment-ec2 \
       --name $AWS_CLOUD9_ENV_NAME \
       --description "AppDynamics Mini Lab" \
       --instance-type t2.micro \
       --automatic-stop-time-minutes 60 --owner-arn $USER_ARN
+  _awsCloud9ListEnvironments
 
-elif [ $cmd = "cloud9-delete-all-env" ]; then
+elif [ $cmd = "delete-cloud9-all" ]; then
   aws cloud9 list-environments --query environmentIds
   LIST1=$(aws cloud9 list-environments --query environmentIds --output text)
   echo $LIST1
@@ -85,8 +89,14 @@ elif [ $cmd = "cloud9-delete-all-env" ]; then
     echo "Delete Cloud 9 Environment $ENV_ID"
     aws cloud9 delete-environment --environment-id $ENV_ID
   done
+  # Delete Stacks relating to cloud9_
+  LIST1=$(aws cloudformation list-stacks --query "StackSummaries[?StackStatus!='DELETE_COMPLETE' && starts_with(StackName, 'cloud9-')][StackName]" --output text)
+  for STACK_NAME in $LIST1; do
+    echo "Deleting Stack $STACK_NAME"
+    aws cloudformation delete-stack --stack-name $STACK_NAME
+  done
 
-elif [ $cmd == "delete-user-group" ]; then
+elif [ $cmd == "delete-cloud9-user" ]; then
   aws iam remove-user-from-group --group-name $AWS_CLOUD9_GROUP_NAME --user-name $AWS_CLOUD9_USER_NAME
   aws iam delete-login-profile --user-name $AWS_CLOUD9_USER_NAME
   aws iam delete-user --user-name $AWS_CLOUD9_USER_NAME
@@ -255,12 +265,12 @@ elif [ $cmd == "test1" ]; then
 else
   echo ""
   echo "Commands: "
-  echo "  create-user-group             Create the Group, User and Polciies for Cloud9"
-  echo "  cloud9-create-env             Create a Cloud9 IDE environment"
+  echo "  create-cloud9-user            Create the Group, User and Polciies for Cloud9"
+  echo "  create-cloud9-env             Create a Cloud9 IDE environment"
   echo "  lambda-list-functions         List all lambda functions"
   echo ""
-  echo "  cloud9-delete-all-env         Delete all Clloud9 IDE environments "
-  echo "  delete-user-group             Delete the Cloud9 User and Group "
+  echo "  delete-cloud9-all             Delete all Clloud9 IDE environments "
+  echo "  delete-cloud9-user            Delete the Cloud9 User and Group "
   echo "  lambda-delete-all-functions   Delete all lambda functions"
   echo ""
   echo "  installJq             Install JQ"
