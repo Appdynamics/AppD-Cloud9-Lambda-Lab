@@ -30,6 +30,7 @@ if [ $cmd == "test" ]; then
 
 elif [ $cmd == "create-cloud9-user" ]; then
   # Create the Group and User. Add the User to the Group
+  echo "Creating User $AWS_CLOUD9_USER_NAME and Group $AWS_CLOUD9_GROUP_NAME"
   aws iam create-group --group-name $AWS_CLOUD9_GROUP_NAME
   aws iam create-user  --user-name  $AWS_CLOUD9_USER_NAME
   aws iam add-user-to-group --user-name $AWS_CLOUD9_USER_NAME --group-name $AWS_CLOUD9_GROUP_NAME
@@ -57,6 +58,7 @@ elif [ $cmd == "create-cloud9-user" ]; then
         --output $AWS_CLOUD_LAMBDA_ACCESS_GROUP_FILE.zip
         unzip $AWS_CLOUD_LAMBDA_ACCESS_GROUP_FILE.zip
   fi
+  echo "Creating cloudformation stack $AWS_CLOUD_LAMBDA_ACCESS_GROUP_NAME from Template file $AWS_CLOUD_LAMBDA_ACCESS_GROUP_FILE.yaml"
   aws cloudformation create-stack \
     --stack-name $AWS_CLOUD_LAMBDA_ACCESS_GROUP_NAME \
     --template-body file://$AWS_CLOUD_LAMBDA_ACCESS_GROUP_FILE.yaml \
@@ -67,6 +69,7 @@ elif [ $cmd == "create-cloud9-user" ]; then
   AWS_CLOUD9_USER_PWD=${AWS_CLOUD9_USER_PWD:-$(openssl rand -base64 16 | tr -dc A-Z-a-z-0-9)}
   echo $AWS_CLOUD9_USER_PWD >> .cloud9_password
   aws iam create-login-profile --user-name $AWS_CLOUD9_USER_NAME --password $AWS_CLOUD9_USER_PWD --no-password-reset-required
+  echo ""
   echo "Created User $AWS_CLOUD9_USER_NAME with Password $AWS_CLOUD9_USER_PWD"
 
 elif [ $cmd = "list-cloud9" ]; then
@@ -74,6 +77,7 @@ elif [ $cmd = "list-cloud9" ]; then
 
 elif [ $cmd = "create-cloud9-env" ]; then
   USER_ARN=`aws iam get-user --user-name $AWS_CLOUD9_USER_NAME --query "User.Arn" --output text`
+  echo "Creating Cloud9 Environment $AWS_CLOUD9_ENV_NAME for User $AWS_CLOUD9_USER_NAME"
   aws cloud9 create-environment-ec2 \
       --name $AWS_CLOUD9_ENV_NAME \
       --description "AppDynamics Mini Lab" \
