@@ -113,6 +113,12 @@ elif [ $cmd == "delete-cloud9-user" ]; then
 elif [ $cmd == "lambda-list-functions" ]; then
   aws lambda list-functions | jq -r '[.Functions[] | {FunctionName, Runtime, Handler, FunctionArn}  ]'
 
+elif [ $cmd == "lambda-invoke-function" ]; then
+  AWS_LAMBDA_FUNCTION_NAME=${2:-"REQUIRED"}
+  POST_DATA=${3:-'{"key1":"DAVID"}'}
+  POST_DATA_B64=$(echo -n $POST_DATA | base64)
+  aws lambda invoke --function-name $AWS_LAMBDA_FUNCTION_NAME --payload "$POST_DATA" /dev/stdout
+
 elif [ $cmd == "lambda-delete-all-functions" ]; then
   LIST1=$(aws lambda list-functions --query Functions[].FunctionName --output text)
   echo $LIST1
@@ -120,8 +126,7 @@ elif [ $cmd == "lambda-delete-all-functions" ]; then
     echo "Delete Lambda Function $FN_NAME"
     aws lambda delete-function --function-name $FN_NAME
   done
-elif [ $cmd == "invokeFunction" ]; then
-   aws lambda invoke --function-name $AWS_LAMBDA_FUNCTION_NAME --payload "$APPD_POST_DATA" /dev/stdout
+
 
 elif [ $cmd == "updateFunctionCode" ]; then
   aws lambda update-function-code --function-name $AWS_LAMBDA_FUNCTION_NAME --zip-file fileb://$AWS_LAMBDA_ZIP_FILE
@@ -267,11 +272,13 @@ else
   echo "Commands: "
   echo "  create-cloud9-user            Create the Group, User and Polciies for Cloud9"
   echo "  create-cloud9-env             Create a Cloud9 IDE environment"
+  echo ""
   echo "  lambda-list-functions         List all lambda functions"
+  echo "  lambda-invoke-function        Invoke a lambda functions"
+  echo "  lambda-delete-all-functions   Delete all lambda functions"
   echo ""
   echo "  delete-cloud9-all             Delete all Clloud9 IDE environments "
   echo "  delete-cloud9-user            Delete the Cloud9 User and Group "
-  echo "  lambda-delete-all-functions   Delete all lambda functions"
   echo ""
   echo "  installJq             Install JQ"
   echo "  installAwsCli         Install AWS CLI"
