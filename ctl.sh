@@ -24,12 +24,12 @@ OS_TYPE=`uname -s`
 # Other Functions
 . bashUtilities.sh
 
-RND_PWD="$(openssl rand -base64 32 | tr -dc A-Z | cut -c1-4)+$(openssl rand -base64 32 | tr -dc 0-9 | cut -c1-4)-$(openssl rand -base64 32 | tr -dc a-z | cut -c1-4)=$(openssl rand -base64 8 | tr -dc A-Z-a-z-0-9)"
 # Commands
 if [ $cmd == "test" ]; then
   echo "Test"
 
 elif [ $cmd == "pwd" ]; then
+  RND_PWD=$(_randomPassword )
   echo "$RND_PWD"
 
 elif [ $cmd == "create-cloud9-user" ]; then
@@ -70,6 +70,7 @@ elif [ $cmd == "create-cloud9-user" ]; then
     --capabilities CAPABILITY_NAMED_IAM
 
   # Use random Password unless already provided
+  RND_PWD=$(_randomPassword )
   AWS_CLOUD9_USER_PWD=${AWS_CLOUD9_USER_PWD:-$RND_PWD}
   echo $AWS_CLOUD9_USER_PWD >> .cloud9_password
   aws iam create-login-profile --user-name $AWS_CLOUD9_USER_NAME --password $AWS_CLOUD9_USER_PWD --no-password-reset-required
