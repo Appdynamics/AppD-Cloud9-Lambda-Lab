@@ -24,9 +24,13 @@ OS_TYPE=`uname -s`
 # Other Functions
 . bashUtilities.sh
 
+RND_PWD="$(openssl rand -base64 32 | tr -dc A-Z | cut -c1-4)+$(openssl rand -base64 32 | tr -dc 0-9 | cut -c1-4)-$(openssl rand -base64 32 | tr -dc a-z | cut -c1-4)=$(openssl rand -base64 8 | tr -dc A-Z-a-z-0-9)"
 # Commands
 if [ $cmd == "test" ]; then
   echo "Test"
+
+elif [ $cmd == "pwd" ]; then
+  echo "$RND_PWD"
 
 elif [ $cmd == "create-cloud9-user" ]; then
   # Create the Group and User. Add the User to the Group
@@ -65,8 +69,8 @@ elif [ $cmd == "create-cloud9-user" ]; then
     --parameters ParameterKey=GroupName,ParameterValue=$AWS_CLOUD9_GROUP_NAME \
     --capabilities CAPABILITY_NAMED_IAM
 
-  # Create random Password unless already provided
-  AWS_CLOUD9_USER_PWD=${AWS_CLOUD9_USER_PWD:-$(openssl rand -base64 16 | tr -dc A-Z-a-z-0-9)}
+  # Use random Password unless already provided
+  AWS_CLOUD9_USER_PWD=${AWS_CLOUD9_USER_PWD:-$RND_PWD}
   echo $AWS_CLOUD9_USER_PWD >> .cloud9_password
   aws iam create-login-profile --user-name $AWS_CLOUD9_USER_NAME --password $AWS_CLOUD9_USER_PWD --no-password-reset-required
   echo ""
@@ -130,7 +134,6 @@ elif [ $cmd == "lambda-delete-all-functions" ]; then
     echo "Delete Lambda Function $FN_NAME"
     aws lambda delete-function --function-name $FN_NAME
   done
-
 
 elif [ $cmd == "updateFunctionCode" ]; then
   aws lambda update-function-code --function-name $AWS_LAMBDA_FUNCTION_NAME --zip-file fileb://$AWS_LAMBDA_ZIP_FILE
