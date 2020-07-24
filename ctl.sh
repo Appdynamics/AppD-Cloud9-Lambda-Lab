@@ -74,8 +74,13 @@ elif [ $cmd == "create-cloud9-user" ]; then
   AWS_CLOUD9_USER_PWD=${AWS_CLOUD9_USER_PWD:-$RND_PWD}
   echo $AWS_CLOUD9_USER_PWD >> .cloud9_password
   aws iam create-login-profile --user-name $AWS_CLOUD9_USER_NAME --password $AWS_CLOUD9_USER_PWD --no-password-reset-required
+  AWS_ACCOUNT_ID=$(aws iam get-user --query User.UserId --output text)
   echo ""
-  echo "Created User $AWS_CLOUD9_USER_NAME with Password $AWS_CLOUD9_USER_PWD"
+  echo "AWS Cloud9 User Created"
+  echo "Logon to the AWS Console as an IAM User, using:"
+  printf "Account ID:    %-30s \n" $AWS_ACCOUNT_ID
+  printf "IAM User Name: %-30s \n" $AWS_CLOUD9_USER_NAME
+  printf "Password:      %-30s \n" $AWS_CLOUD9_USER_PWD
 
 elif [ $cmd = "list-cloud9" ]; then
   _awsCloud9ListEnvironments
