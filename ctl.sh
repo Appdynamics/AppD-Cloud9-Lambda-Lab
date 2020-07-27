@@ -91,7 +91,7 @@ elif [ $cmd = "create-cloud9-env" ]; then
   aws cloud9 create-environment-ec2 \
       --name $AWS_CLOUD9_ENV_NAME \
       --description "AppDynamics Mini Lab" \
-      --instance-type t2.micro \
+      --instance-type t3.small \
       --automatic-stop-time-minutes 60 --owner-arn $USER_ARN
   _awsCloud9ListEnvironments
 
